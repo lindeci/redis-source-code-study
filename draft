@@ -1,7 +1,77 @@
+set a 123
+
 dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
 setKey(client * c, redisDb * db, robj * key, robj * val, int flags) (\data\redis\src\db.c:270)
 setGenericCommand(client * c, int flags, robj * key, robj * val, robj * expire, int unit, robj * ok_reply, robj * abort_reply) (\data\redis\src\t_string.c:111)
 setCommand(client * c) (\data\redis\src\t_string.c:302)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+
+
+
+hmset hmkey name ldc passwd ldc sex m age 18
+
+sdsdup(const sds s) (\data\redis\src\sds.c:190)
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+hashTypeLookupWriteOrCreate(client * c, robj * key) (\data\redis\src\t_hash.c:443)
+hsetCommand(client * c) (\data\redis\src\t_hash.c:609)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+
+
+lpush lkey mysql redis
+
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+pushGenericCommand(client * c, int where, int xx) (\data\redis\src\t_list.c:250)
+lpushCommand(client * c) (\data\redis\src\t_list.c:267)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+
+
+sadd skey 123 test mysql hello
+
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+saddCommand(client * c) (\data\redis\src\t_set.c:312)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+
+zadd zkey 91 she 92 he 93 me
+
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+zaddGenericCommand(client * c, int flags) (\data\redis\src\t_zset.c:1754)
+zaddCommand(client * c) (\data\redis\src\t_zset.c:1795)
 call(client * c, int flags) (\data\redis\src\server.c:3374)
 processCommand(client * c) (\data\redis\src\server.c:4008)
 processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
