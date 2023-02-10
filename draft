@@ -82,3 +82,10 @@ connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int m
 aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
 aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
 main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+
+
+
+fork()
+Negative Value: creation of a child process was unsuccessful.
+Zero: Returned to the newly created child process.
+Positive value: Returned to parent or caller. The value contains process ID of newly created child process.
