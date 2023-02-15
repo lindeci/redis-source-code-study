@@ -1,0 +1,113 @@
+目前比较流行的c/c++代码来看，nginx，memcached，mysql等都有自己的内存管理模块，而redis使用的是第三方的内存管理模块je_malloc或tc_malloc，但虽然使用的是第三方的内存管理模块redis的性能依然是不错的。
+
+jemalloc简介
+jemalloc是有名的内存管理模块，可以替换libc的malloc，从而使得程序的性能得到提升。
+
+wget https://github.com/jemalloc/jemalloc/releases/download/5.2.0/jemalloc-5.2.0.tar.bz2
+tar xjvf jemalloc-5.2.0.tar.bz2
+cd jemalloc-5.2.0/
+./configure --with-jemalloc-prefix=je_
+make
+
+$ ls ./lib
+libjemalloc.a  libjemalloc_pic.a  libjemalloc.so  libjemalloc.so.2
+其中libjemalloc.a是静态库，
+libjemalloc.so.2是动态库，这里我使用的是静态库
+
+使用jemalloc
+cd ../
+mkdir testproject
+mkdir ./testproject/lib
+mkdir  ./testproject/include
+
+cp jemalloc-5.2.0/include/jemalloc/jemalloc.h ./testproject/include
+cp jemalloc-5.2.0/include/jemalloc/jemalloc_defs.h ./testproject/include
+cp  libjemalloc.a ./testproject/lib
+cd ./testproject
+
+vi diymalloc.h
+#ifndef _DIYMALLOC_H_
+#define _DIYMALLOC_H_
+
+#include <jemalloc.h>
+
+//define to jemalloc
+#define malloc(size) je_malloc(size)
+#define calloc(count,size) je_calloc(count,size)
+#define realloc(ptr,size) je_realloc(ptr,size)
+#define free(ptr) je_free(ptr)
+
+#endif
+
+
+
+vi dtest.c
+#include <stdio.h>
+#include "diymalloc.h"
+
+int main(void)
+{
+    char *pcon;
+
+    pcon = malloc(10*sizeof(char));
+    if (!pcon)
+        fprintf(stderr, "malloc failed!\n");
+
+	if (pcon != NULL) {
+		free(pcon);
+		pcon = NULL;
+	}
+    fprintf(stderr, "main end!\n");
+    return 0;
+}
+
+
+
+vi  Makefile
+CC=gcc
+CFLAGS=-Wall -g
+INCLUDES=-I ./include/
+ALLOC_DEP=./lib/libjemalloc.a
+ALLOC_LINK=$(ALLOC_DEP) -lpthread -ldl
+
+dtest: dtest.o
+        $(CC) $(INCLUDES) $(CFLAGS) -o dtest dtest.o $(ALLOC_LINK)
+
+dtest.o: dtest.c $(ALLOC_DEP)
+        $(CC) -c $(INCLUDES) $(CFLAGS) dtest.c
+
+clean:
+        rm -f dtest dtest.o
+        
+
+
+make
+
+# gdb ./dtest
+GNU gdb (GDB) Red Hat Enterprise Linux 7.6.1-120.el7
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-redhat-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /tmp/jemalloc-5.2.0/dtest...done.
+(gdb) b main
+Breakpoint 1 at 0x403235: file dtest.c, line 8.
+(gdb) r
+Starting program: /tmp/jemalloc-5.2.0/./dtest 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib64/libthread_db.so.1".
+
+Breakpoint 1, main () at dtest.c:8
+8           pcon = malloc(10*sizeof(char));
+Missing separate debuginfos, use: debuginfo-install glibc-2.17-325.el7_9.x86_64
+(gdb) s
+je_malloc (size=10) at src/jemalloc.c:2253
+2253            if (unlikely(!tsd || !tsd_fast(tsd) || (size > SC_LOOKUP_MAXCLASS))) {
+(gdb) pwd
+Working directory /tmp/jemalloc-5.2.0.
+(gdb) n
+2259 
