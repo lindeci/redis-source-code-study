@@ -209,3 +209,11 @@ int main()
     }
     return 0;
 }
+
+
+
+
+
+
+C++中的do{}while(0)
+https://zhuanlan.zhihu.com/p/429150129
