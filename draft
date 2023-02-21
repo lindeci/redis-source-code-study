@@ -114,3 +114,58 @@ aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
 aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
 main(int argc, char ** argv) (\data\redis\src\server.c:7156)
 
+
+
+cat .vscode/tasks.json 
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build", 
+            "type": "shell", 
+            "command": "make",
+            "args": [
+                "CFLAGS=\"-g -O0\""
+            ]
+        }
+    ]
+}
+
+
+cat .vscode/launch.json 
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "redis",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/redis-server",
+            "args": [
+                "redis.conf"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description":  "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+          ]
+        }
+    ]
+}
