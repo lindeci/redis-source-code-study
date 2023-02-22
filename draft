@@ -381,3 +381,28 @@ VSCode如何返回上一步
 在Windows中可以使用快捷键“Alt+←”实现。
 在Linux中可以使用快捷键“Ctrl+Alt+ -”实现。
 在Mac中可以使用快捷键“Ctrl + -”实现。
+
+
+查看进程打开的文件句柄、端口
+lsof -c redis-server
+COMMAND    PID USER   FD      TYPE             DEVICE  SIZE/OFF      NODE NAME
+redis-ser 7063 root  cwd       DIR              253,2      4096 237077793 /data/redis
+redis-ser 7063 root  rtd       DIR              253,2       256        64 /
+redis-ser 7063 root  txt       REG              253,2  13815304 381165668 /data/redis/src/redis-server
+redis-ser 7063 root  mem       REG              253,2 106176928   6296770 /usr/lib/locale/locale-archive
+redis-ser 7063 root  mem       REG              253,2   2156592     10419 /usr/lib64/libc-2.17.so
+redis-ser 7063 root  mem       REG              253,2    142144     10450 /usr/lib64/libpthread-2.17.so
+redis-ser 7063 root  mem       REG              253,2     43712     31011 /usr/lib64/librt-2.17.so
+redis-ser 7063 root  mem       REG              253,2     19248     10426 /usr/lib64/libdl-2.17.so
+redis-ser 7063 root  mem       REG              253,2   1136944     10428 /usr/lib64/libm-2.17.so
+redis-ser 7063 root  mem       REG              253,2    163312     10411 /usr/lib64/ld-2.17.so
+redis-ser 7063 root    0u      CHR             136,15       0t0        18 /dev/pts/15
+redis-ser 7063 root    1u      CHR             136,15       0t0        18 /dev/pts/15
+redis-ser 7063 root    2u      CHR             136,15       0t0        18 /dev/pts/15
+redis-ser 7063 root    3u     unix 0xffff9117b95fb000       0t0  54206230 socket
+redis-ser 7063 root    4u     unix 0xffff9117b95f8800       0t0  54206231 socket
+redis-ser 7063 root    5r     FIFO               0,13       0t0  54206258 pipe
+redis-ser 7063 root    6w     FIFO               0,13       0t0  54206258 pipe
+redis-ser 7063 root    7u  a_inode               0,14         0      9082 [eventpoll]
+redis-ser 7063 root    8u     IPv4           54209317       0t0       TCP localhost:6379 (LISTEN)
+redis-ser 7063 root    9u     IPv6           54212914       0t0       TCP localhost:6379 (LISTEN)
