@@ -169,3 +169,209 @@ cat .vscode/launch.json
         }
     ]
 }
+
+
+
+acl.c                 1
+adlist.c              1
+adlist.h              1
+ae.c                  服务端和客户端实现-事件驱动
+ae_epoll.c            服务端和客户端实现-事件驱动
+ae_evport.c           1
+ae.h                  1
+ae_kqueue.c           1
+ae_select.c           1
+anet.c                服务端和客户端实现-网络连接
+anet.h                1
+aof.c                 持久化-aof
+asciilogo.h           1
+atomicvar.h           1
+bio.c                 1
+bio.h                 1
+bitops.c              1
+blocked.c             1
+call_reply.c          1
+call_reply.h          1
+childinfo.c           1
+cli_common.c          1
+cli_common.h          1
+cluster.c             其它-集群
+cluster.h             1
+commands              1
+commands.c            1
+config.c              1
+config.h              1
+connection.c          1
+connection.h          1
+connhelpers.h         1
+crc16.c               1
+crc16_slottable.h     1
+crc64.c               1
+crc64.h               1
+crcspeed.c            1
+crcspeed.h            1
+db.c                  数据库的底层实现
+debug.c               1
+debugmacro.h          1
+defrag.c              1
+dict.c                基本数据结构-字典
+dict.h                1
+endianconv.c          1
+endianconv.h          1
+eval.c                1
+evict.c               1
+expire.c              1
+fmacros.h             1
+function_lua.c        1
+functions.c           1
+functions.h           1
+geo.c                 1
+geo.h                 1
+geohash.c             1
+geohash.h             1
+geohash_helper.c      1
+geohash_helper.h      1
+help.h                1
+hyperloglog.c         1
+intset.c              基本数据结构-整数集合
+intset.h              1
+latency.c             1
+latency.h             1
+lazyfree.c            1
+listpack.c            基本数据结构-Streams
+listpack.h            1
+listpack_malloc.h     1
+localtime.c           1
+lolwut5.c             1
+lolwut6.c             1
+lolwut.c              1
+lolwut.h              1
+lzf_c.c               1
+lzf_d.c               1
+lzf.h                 1
+lzfP.h                1
+Makefile              1
+memtest.c             1
+mkreleasehdr.sh       1
+module.c              1
+modules               1
+monotonic.c           1
+monotonic.h           1
+mt19937-64.c          1
+mt19937-64.h          1
+multi.c               1
+networking.c          服务端和客户端实现-网络连接
+notify.c              1
+object.c              数据类型的底层实现-redis对象
+pqsort.c              1
+pqsort.h              1
+pubsub.c              1
+quicklist.c           基本数据结构-快速链表
+quicklist.h           1
+rand.c                1
+rand.h                1
+rax.c                 基本数据结构-Streams
+rax.h                 1
+rax_malloc.h          1
+rdb.c                 持久化-rdb
+rdb.h                 1
+redisassert.c         1
+redisassert.h         1
+redis-benchmark       1
+redis-benchmark.c     1
+redis-check-aof       1
+redis-check-aof.c     1
+redis-check-rdb       1
+redis-check-rdb.c     1
+redis-cli             1
+redis-cli.c           服务端和客户端实现-客户端程序
+redismodule.h         1
+redis-sentinel        1
+redis-server          1
+redis-trib.rb         1
+release.c             1
+release.h             1
+replication.c         其它-主从复制
+resp_parser.c         1
+resp_parser.h         1
+rio.c                 1
+rio.h                 1
+script.c              1
+script.h              1
+script_lua.c          1
+script_lua.h          1
+sdsalloc.h            1
+sds.c                 基本数据结构-动态字符串
+sds.h                 1
+sentinel.c            其它-哨兵
+server.c              服务端和客户端实现-服务端程序
+server.h              1
+setcpuaffinity.c      1
+setproctitle.c        1
+sha1.c                1
+sha1.h                1
+sha256.c              1
+sha256.h              1
+siphash.c             1
+slowlog.c             1
+slowlog.h             1
+solarisfixes.h        1
+sort.c                1
+sparkline.c           1
+sparkline.h           1
+stream.h              1
+syncio.c              1
+syscheck.c            1
+syscheck.h            1
+testhelp.h            1
+t_hash.c              数据类型的底层实现-字典
+timeout.c             1
+t_list.c              数据类型的底层实现-列表
+tls.c                 1
+tracking.c            1
+t_set.c               数据类型的底层实现-集合
+t_stream.c            数据类型的底层实现-数据流
+t_string.c            数据类型的底层实现-字符串
+t_zset.c              数据类型的底层实现-有序集合
+util.c                1
+util.h                1
+version.h             1
+ziplist.c             基本数据结构-压缩列表
+ziplist.h             1
+zipmap.c              1
+zipmap.h              1
+zmalloc.c             1
+zmalloc.h             1
+
+
+
+动态库练习
+cat libfunctions.c
+#include <stdio.h>
+
+void ICQ_Process_1(int i)
+{
+        printf("I am ICQ_Process_1:  %d\n",i);
+}
+
+cat main.c
+#include <stdlib.h>
+#include <dlfcn.h>
+typedef void function_t(int i);
+int main(int argc, char const *argv[])
+{
+        void *libfunctions;
+        function_t *func1;
+        libfunctions = dlopen("/tmp/libfunctions.so", RTLD_NOW);
+        func1 = dlsym(libfunctions, "ICQ_Process_1");
+        func1(999); // I am ICQ_Process_1
+        dlclose(libfunctions);
+        return EXIT_SUCCESS;
+}
+
+gcc -shared -o libfunctions.so -fPIC libfunctions.c
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp
+gcc -L. main.c -ldl -lfunctions -o main.out
+运行结果
+./main.out 
+I am ICQ_Process_1:  999
