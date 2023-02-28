@@ -223,3 +223,7 @@ https://zhuanlan.zhihu.com/p/349726808
 
 C++中的do{}while(0)
 https://zhuanlan.zhihu.com/p/429150129
+
+pthread_mutex_init(&io_threads_mutex[i],NULL);      //ldc:每个 I/O 线程会分配一个本地锁，用来休眠和唤醒线程
+https://zhuanlan.zhihu.com/p/370840130
+线程同步
