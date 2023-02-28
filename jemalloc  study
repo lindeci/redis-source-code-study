@@ -211,6 +211,12 @@ int main()
 }
 
 
+C/C++关键字之restrict
+https://zhuanlan.zhihu.com/p/349726808
+在C语言中，restrict关键字用于修饰指针(C99标准)。通过加上restrict关键字，编程者可提示编译器：在该指针的生命周期内，其指向的对象不会被别的指针所引用。
+需要注意的是，在C++中，并无明确统一的标准支持restrict关键字。但是很多编译器实现了功能相同的关键字，例如gcc和clang中的__restrict关键字。
+注意使用restrict的时候，编程者必须确保不会出现pointer aliasing, 即同一块内存无法通过两个或以上的指针变量名访问。不满足这个条件而强行指定restrict, 将会出现undefined behavior
+
 
 
 
