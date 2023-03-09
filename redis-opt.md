@@ -26,6 +26,19 @@
   - [击穿](#击穿)
   - [穿透](#穿透)
   - [雪崩](#雪崩)
+- [常用命令的函数调用链](#常用命令的函数调用链)
+  - [set](#set)
+  - [meet](#meet)
+  - [forget](#forget)
+  - [hmset](#hmset)
+  - [lpush](#lpush)
+  - [sadd](#sadd)
+  - [zadd](#zadd)
+  - [hash表查找](#hash表查找)
+  - [gossip](#gossip)
+- [VSCODE调试redis的配置](#vscode调试redis的配置)
+- [进程的文件句柄、端口查看](#进程的文件句柄端口查看)
+- [源码文件描述](#源码文件描述)
 
 # Redis Cluster 安装部署
 参考 https://blog.csdn.net/zimu312500/article/details/123466423  
@@ -388,14 +401,27 @@ redis-cli -p 6401 --cluster add-node 127.0.0.1:7402 127.0.0.1:6401 --cluster-sla
 下线从节点
 ```sh
 redis-cli --cluster del-node 127.0.0.1:7001 nodeID_7001
-del-node 后面跟着slave节点的 ip:port 和node ID
+#del-node 后面跟着slave节点的 ip:port 和node ID
 ```
 下线主节点
 ```sh
-先清空master的slot
+#先清空master的slot
 redis-cli --cluster reshard 127.0.0.1:7000 --cluster-from nodeID_7000 --cluster-to nodeID_target --cluster-slots 1024 --cluster-yes
-再下线（删除）节点
+#再下线（删除）节点
 redis-cli --cluster del-node 127.0.0.1:7000 nodeID_7000
+```
+```sh
+./redis-cli --cluster reshard 127.0.0.1:6379 --cluster-from e3d110e6bda857031747f21b60e00d8bd3071c4d --cluster-to 8dac64ca81f99d90d49dc790acf91841991d8963 --cluster-slots 10923-16383 --cluster-yes
+……
+Moving slot 16381 from 127.0.0.1:6381 to 127.0.0.1:6379: 
+Moving slot 16382 from 127.0.0.1:6381 to 127.0.0.1:6379: 
+Moving slot 16383 from 127.0.0.1:6381 to 127.0.0.1:6379:
+
+./redis-cli --cluster del-node 127.0.0.1:6379 e3d110e6bda857031747f21b60e00d8bd3071c4d
+>>> Removing node e3d110e6bda857031747f21b60e00d8bd3071c4d from cluster 127.0.0.1:6379
+>>> Sending CLUSTER FORGET messages to the cluster...
+>>> Sending CLUSTER RESET SOFT to the deleted node.
+#
 ```
 ## 集群全局命令
 ```sh
@@ -596,3 +622,396 @@ redis缓存击穿是指某一个非常热点的key(即在客户端搜索的比�
 - 2.将不同的热点key放置到不同的节点上去。因redis一般都是集群部署,将不同的热点key平均的放置到不同节点,也可以有效避免雪崩。
 - 3.将value的时效设置成永不过期
 - 4.使用Timetask做一个定时任务，在失效之前重新刷redis缓存
+
+# 常用命令的函数调用链
+## set
+```cpp
+#set a 123
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+setKey(client * c, redisDb * db, robj * key, robj * val, int flags) (\data\redis\src\db.c:270)
+setGenericCommand(client * c, int flags, robj * key, robj * val, robj * expire, int unit, robj * ok_reply, robj * abort_reply) (\data\redis\src\t_string.c:111)
+setCommand(client * c) (\data\redis\src\t_string.c:302)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## meet
+```cpp
+#cluster meet 127.0.0.1 6381 16381
+clusterStartHandshake(char * ip, int port, int cport) (\data\redis\src\cluster.c:1596)
+clusterCommand(client * c) (\data\redis\src\cluster.c:5279)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## forget
+```
+```
+## hmset
+```cpp
+#hmset hmkey name ldc passwd ldc sex m age 18
+sdsdup(const sds s) (\data\redis\src\sds.c:190)
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+hashTypeLookupWriteOrCreate(client * c, robj * key) (\data\redis\src\t_hash.c:443)
+hsetCommand(client * c) (\data\redis\src\t_hash.c:609)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## lpush
+```cpp
+#lpush lkey mysql redis
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+pushGenericCommand(client * c, int where, int xx) (\data\redis\src\t_list.c:250)
+lpushCommand(client * c) (\data\redis\src\t_list.c:267)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## sadd
+```cpp
+#sadd skey 123 test mysql hello
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+saddCommand(client * c) (\data\redis\src\t_set.c:312)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## zadd
+```cpp
+#zadd zkey 91 she 92 he 93 me
+dbAdd(redisDb * db, robj * key, robj * val) (\data\redis\src\db.c:189)
+zaddGenericCommand(client * c, int flags) (\data\redis\src\t_zset.c:1754)
+zaddCommand(client * c) (\data\redis\src\t_zset.c:1795)
+call(client * c, int flags) (\data\redis\src\server.c:3374)
+processCommand(client * c) (\data\redis\src\server.c:4008)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## hash表查找
+```cpp
+siphash_nocase(const uint8_t * in, const size_t inlen, const uint8_t * k) (\data\redis\src\siphash.c:193)
+dictGenCaseHashFunction(const unsigned char * buf, size_t len) (\data\redis\src\dict.c:91)
+dictSdsCaseHash(const void * key) (\data\redis\src\server.c:290)
+dictFind(dict * d, const void * key) (\data\redis\src\dict.c:521)
+dictFetchValue(dict * d, const void * key) (\data\redis\src\dict.c:538)
+lookupCommandLogic(dict * commands, robj ** argv, int argc, int strict) (\data\redis\src\server.c:3032)
+lookupCommand(robj ** argv, int argc) (\data\redis\src\server.c:3048)
+processCommand(client * c) (\data\redis\src\server.c:3697)
+processCommandAndResetClient(client * c) (\data\redis\src\networking.c:2469)
+processInputBuffer(client * c) (\data\redis\src\networking.c:2573)
+readQueryFromClient(connection * conn) (\data\redis\src\networking.c:2709)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## gossip
+```cpp
+clusterProcessPacket(clusterLink * link) (\data\redis\src\cluster.c:2102)
+clusterReadHandler(connection * conn) (\data\redis\src\cluster.c:2758)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+
+# VSCODE调试redis的配置
+```json
+cat .vscode/tasks.json 
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build", 
+            "type": "shell", 
+            "command": "make",
+            "args": [
+                "CFLAGS=\"-g -O0\""
+            ]
+        }
+    ]
+}
+
+cat .vscode/launch.json 
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "redis",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/redis-server",
+            "args": [
+                "redis.conf",
+                "--loglevel debug",
+                "--cluster-enabled yes",
+                "--cluster-config-file nodes-6379.conf"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description":  "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+          ]
+        }
+    ]
+}
+```
+# 进程的文件句柄、端口查看
+```sh
+lsof -c redis-server
+COMMAND    PID USER   FD      TYPE             DEVICE  SIZE/OFF      NODE NAME
+redis-ser 7063 root  cwd       DIR              253,2      4096 237077793 /data/redis
+redis-ser 7063 root  rtd       DIR              253,2       256        64 /
+redis-ser 7063 root  txt       REG              253,2  13815304 381165668 /data/redis/src/redis-server
+redis-ser 7063 root  mem       REG              253,2 106176928   6296770 /usr/lib/locale/locale-archive
+redis-ser 7063 root  mem       REG              253,2   2156592     10419 /usr/lib64/libc-2.17.so
+redis-ser 7063 root  mem       REG              253,2    142144     10450 /usr/lib64/libpthread-2.17.so
+redis-ser 7063 root  mem       REG              253,2     43712     31011 /usr/lib64/librt-2.17.so
+redis-ser 7063 root  mem       REG              253,2     19248     10426 /usr/lib64/libdl-2.17.so
+redis-ser 7063 root  mem       REG              253,2   1136944     10428 /usr/lib64/libm-2.17.so
+redis-ser 7063 root  mem       REG              253,2    163312     10411 /usr/lib64/ld-2.17.so
+redis-ser 7063 root    0u      CHR             136,15       0t0        18 /dev/pts/15
+redis-ser 7063 root    1u      CHR             136,15       0t0        18 /dev/pts/15
+redis-ser 7063 root    2u      CHR             136,15       0t0        18 /dev/pts/15
+redis-ser 7063 root    3u     unix 0xffff9117b95fb000       0t0  54206230 socket
+redis-ser 7063 root    4u     unix 0xffff9117b95f8800       0t0  54206231 socket
+redis-ser 7063 root    5r     FIFO               0,13       0t0  54206258 pipe
+redis-ser 7063 root    6w     FIFO               0,13       0t0  54206258 pipe
+redis-ser 7063 root    7u  a_inode               0,14         0      9082 [eventpoll]
+redis-ser 7063 root    8u     IPv4           54209317       0t0       TCP localhost:6379 (LISTEN)
+redis-ser 7063 root    9u     IPv6           54212914       0t0       TCP localhost:6379 (LISTEN)
+```
+# 源码文件描述
+```cpp
+acl.c                 ACL权限控制
+adlist.c              1
+adlist.h              1
+ae.c                  服务端和客户端实现-事件驱动
+ae_epoll.c            服务端和客户端实现-事件驱动
+ae_evport.c           1
+ae.h                  1
+ae_kqueue.c           1
+ae_select.c           1
+anet.c                服务端和客户端实现-网络连接
+anet.h                1
+aof.c                 持久化-aof
+asciilogo.h           logo图形
+atomicvar.h           原子操作
+bio.c                 1
+bio.h                 1
+bitops.c              1
+blocked.c             1
+call_reply.c          1
+call_reply.h          1
+childinfo.c           1
+cli_common.c          1
+cli_common.h          1
+cluster.c             其它-集群
+cluster.h             1
+commands              1
+commands.c            1
+config.c              1
+config.h              1
+connection.c          1
+connection.h          1
+connhelpers.h         1
+crc16.c               1
+crc16_slottable.h     1
+crc64.c               1
+crc64.h               1
+crcspeed.c            1
+crcspeed.h            1
+db.c                  数据库的底层实现
+debug.c               1
+debugmacro.h          1
+defrag.c              1
+dict.c                基本数据结构-字典
+dict.h                1
+endianconv.c          1
+endianconv.h          1
+eval.c                1
+evict.c               淘汰过期KEY
+expire.c              处理过期KEY
+fmacros.h             1
+function_lua.c        1
+functions.c           1
+functions.h           1
+geo.c                 1
+geo.h                 1
+geohash.c             1
+geohash.h             1
+geohash_helper.c      1
+geohash_helper.h      1
+help.h                1
+hyperloglog.c         1
+intset.c              基本数据结构-整数集合
+intset.h              1
+latency.c             1
+latency.h             1
+lazyfree.c            1
+listpack.c            基本数据结构-Streams
+listpack.h            1
+listpack_malloc.h     1
+localtime.c           1
+lolwut5.c             1
+lolwut6.c             1
+lolwut.c              1
+lolwut.h              1
+lzf_c.c               1
+lzf_d.c               1
+lzf.h                 1
+lzfP.h                1
+Makefile              1
+memtest.c             1
+mkreleasehdr.sh       1
+module.c              1
+modules               1
+monotonic.c           1
+monotonic.h           1
+mt19937-64.c          1
+mt19937-64.h          1
+multi.c               1
+networking.c          服务端和客户端实现-网络连接
+notify.c              1
+object.c              数据类型的底层实现-redis对象
+pqsort.c              1
+pqsort.h              1
+pubsub.c              1
+quicklist.c           基本数据结构-快速链表
+quicklist.h           1
+rand.c                1
+rand.h                1
+rax.c                 RAX树
+rax.h                 1
+rax_malloc.h          1
+rdb.c                 持久化-rdb
+rdb.h                 1
+redisassert.c         1
+redisassert.h         1
+redis-benchmark       1
+redis-benchmark.c     压测工具
+redis-check-aof       1
+redis-check-aof.c     1
+redis-check-rdb       1
+redis-check-rdb.c     1
+redis-cli             1
+redis-cli.c           服务端和客户端实现-客户端程序
+redismodule.h         1
+redis-sentinel        1
+redis-server          1
+redis-trib.rb         1
+release.c             1
+release.h             1
+replication.c         其它-主从复制
+resp_parser.c         1
+resp_parser.h         1
+rio.c                 1
+rio.h                 1
+script.c              1
+script.h              1
+script_lua.c          1
+script_lua.h          1
+sdsalloc.h            1
+sds.c                 基本数据结构-动态字符串
+sds.h                 1
+sentinel.c            其它-哨兵
+server.c              服务端和客户端实现-服务端程序
+server.h              1
+setcpuaffinity.c      CPU绑核
+setproctitle.c        1
+sha1.c                1
+sha1.h                1
+sha256.c              1
+sha256.h              1
+siphash.c             1
+slowlog.c             1
+slowlog.h             1
+solarisfixes.h        1
+sort.c                1
+sparkline.c           1
+sparkline.h           1
+stream.h              1
+syncio.c              1
+syscheck.c            1
+syscheck.h            1
+testhelp.h            1
+t_hash.c              数据类型的底层实现-字典
+timeout.c             1
+t_list.c              数据类型的底层实现-列表
+tls.c                 1
+tracking.c            1
+t_set.c               数据类型的底层实现-集合
+t_stream.c            数据类型的底层实现-数据流
+t_string.c            数据类型的底层实现-字符串
+t_zset.c              数据类型的底层实现-有序集合
+util.c                1
+util.h                1
+version.h             1
+ziplist.c             基本数据结构-压缩列表
+ziplist.h             1
+zipmap.c              1
+zipmap.h              1
+zmalloc.c             1
+zmalloc.h             1
+```
