@@ -36,6 +36,7 @@
   - [zadd](#zadd)
   - [hash表查找](#hash表查找)
   - [gossip](#gossip)
+  - [accept接受连接](#accept接受连接)
 - [VSCODE调试redis的配置](#vscode调试redis的配置)
 - [进程的文件句柄、端口查看](#进程的文件句柄端口查看)
 - [源码文件描述](#源码文件描述)
@@ -407,7 +408,7 @@ redis-cli --cluster del-node 127.0.0.1:7001 nodeID_7001
 ```sh
 #先清空master的slot
 redis-cli --cluster reshard 127.0.0.1:7000 --cluster-from nodeID_7000 --cluster-to nodeID_target --cluster-slots 1024 --cluster-yes
-#再下线（删除）节点
+#下线（删除）节点
 redis-cli --cluster del-node 127.0.0.1:7000 nodeID_7000
 ```
 ```sh
@@ -754,6 +755,17 @@ clusterProcessPacket(clusterLink * link) (\data\redis\src\cluster.c:2102)
 clusterReadHandler(connection * conn) (\data\redis\src\cluster.c:2758)
 callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
 connSocketEventHandler(struct aeEventLoop * el, int fd, void * clientData, int mask) (\data\redis\src\connection.c:310)
+aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
+aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
+main(int argc, char ** argv) (\data\redis\src\server.c:7156)
+```
+## accept接受连接
+```cpp
+clusterConnAcceptHandler(connection * conn) (\data\redis\src\cluster.c:840)
+callHandler(connection * conn, ConnectionCallbackFunc handler) (\data\redis\src\connhelpers.h:79)
+connSocketAccept(connection * conn, ConnectionCallbackFunc accept_handler) (\data\redis\src\connection.c:220)
+connAccept(connection * conn, ConnectionCallbackFunc accept_handler) (\data\redis\src\connection.h:109)
+clusterAcceptHandler(aeEventLoop * el, int fd, void * privdata, int mask) (\data\redis\src\cluster.c:902)
 aeProcessEvents(aeEventLoop * eventLoop, int flags) (\data\redis\src\ae.c:436)
 aeMain(aeEventLoop * eventLoop) (\data\redis\src\ae.c:496)
 main(int argc, char ** argv) (\data\redis\src\server.c:7156)
